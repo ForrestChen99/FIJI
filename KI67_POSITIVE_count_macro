@@ -1,0 +1,59 @@
+##using FIJI to count ki67 positive cells
+
+// Folder selection
+dir = getDirectory("Choose a Folder");
+list = getFileList(dir);
+
+// Create results file
+output = dir + "Ki67_Results.csv";
+File.open(output);
+print("Filename, Positive_Count, Total_Nuclei_Count");
+
+// Loop over all images
+for (i = 0; i < list.length; i++) {
+    if (endsWith(list[i], ".jpg") || endsWith(list[i], ".png") || endsWith(list[i], ".tif")) {
+        open(dir + list[i]);
+        
+        // Run Color Deconvolution (H DAB or your standard vector)
+        run("Colour Deconvolution", "vectors=[H DAB]");
+
+        // ----- COUNT POSITIVE CELLS -----
+        posWindow = list[i] + "-(Colour_2)";
+        if (isOpen(posWindow)) {
+            selectWindow(posWindow);
+            // Set threshold for DAB (positive nuclei)
+            setAutoThreshold("Default Red");
+            // Adjust size=50-Infinity if needed (50 is an example)
+            run("Analyze Particles...", "size=400-Infinity show=Nothing clear add");
+            nPos = nResults;
+            close();
+            run("Clear Results");
+        } else {
+            print("Warning: " + posWindow + " not found.");
+            nPos = 0;
+        }
+
+        // ----- COUNT ALL NUCLEI -----
+        totalWindow = list[i] + "-(Colour_1)";
+        if (isOpen(totalWindow)) {
+            selectWindow(totalWindow);
+            // Set threshold for Hematoxylin (all nuclei)
+            setAutoThreshold("Default Red");
+            run("Analyze Particles...", "size=400-Infinity show=Nothing clear add");
+            nTotal = nResults;
+            close();
+            run("Clear Results");
+        } else {
+            print("Warning: " + totalWindow + " not found.");
+            nTotal = 0;
+        }
+
+        // Close original image
+        selectWindow(list[i]);
+        close();
+
+        // Save counts
+        print(list[i] + "," + nPos + "," + nTotal);
+    }
+}
+File.close();
