@@ -1,0 +1,64 @@
+##leica sp8 overlay figures, Z stack project, from z1 to zxxxx.
+##input example:/Volumes/WT-WD/confocal/250527/overlay/
+##output example:/Volumes/WT-WD/confocal/250527/overlay/output/
+
+
+// Define parent input folder (contains subfolders)
+parent = ""; 
+output = ""; 
+
+// Get subfolder list
+folderList = getFileList(parent);
+
+// Loop through each folder
+for (f = 0; f < folderList.length; f++) {
+    subfolder = folderList[f];
+    
+    // Skip non-folders
+    if (!File.isDirectory(parent + subfolder)) {
+        continue;
+    }
+
+    input = parent + subfolder;
+    list = getFileList(input);
+
+    prefixList = newArray();
+
+    // Step 1: collect unique prefixes in this subfolder
+    for (i = 0; i < list.length; i++) {
+        if (endsWith(list[i], ".tif")) {
+            name = list[i];
+            base = replace(name, "_z[0-9]+\\.tif", "");
+
+            found = false;
+            for (j = 0; j < prefixList.length; j++) {
+                if (prefixList[j] == base) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                prefixList = Array.concat(prefixList, base);
+            }
+        }
+    }
+
+    // Step 2: process each stack in the subfolder
+    for (j = 0; j < prefixList.length; j++) {
+        prefix = prefixList[j];
+        run("Close All");
+
+        for (k = 0; k < list.length; k++) {
+            if (startsWith(list[k], prefix) && endsWith(list[k], ".tif")) {
+                open(input + "/" + list[k]);
+            }
+        }
+
+        run("Images to Stack", "name=" + prefix + " use");
+        run("Z Project...", "projection=[Max Intensity]");
+        rename("MAX_" + prefix);
+        saveAs("Tiff", output + "MAX_" + prefix + ".tif");
+
+        run("Close All");
+    }
+}
