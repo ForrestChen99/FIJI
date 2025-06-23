@@ -1,3 +1,5 @@
+
+
 ##using FIJI to count ki67 positive cells
 
 // Folder selection
@@ -22,9 +24,12 @@ for (i = 0; i < list.length; i++) {
         if (isOpen(posWindow)) {
             selectWindow(posWindow);
             // Set threshold for DAB (positive nuclei)
-            setAutoThreshold("Default Red");
+            run("8-bit");  // ensure it’s 8-bit
+		setThreshold(0, 154);        // only pixels 0…154 remain
+		setOption("BlackBackground", false);
+		run("Convert to Mask");      // binarize
             // Adjust size=50-Infinity if needed (50 is an example)
-            run("Analyze Particles...", "size=400-Infinity show=Nothing clear add");
+            run("Analyze Particles...", "size=80-Infinity show=Nothing clear add");
             nPos = nResults;
             close();
             run("Clear Results");
@@ -39,7 +44,7 @@ for (i = 0; i < list.length; i++) {
             selectWindow(totalWindow);
             // Set threshold for Hematoxylin (all nuclei)
             setAutoThreshold("Default Red");
-            run("Analyze Particles...", "size=400-Infinity show=Nothing clear add");
+            run("Analyze Particles...", "size=80-Infinity show=Nothing clear add");
             nTotal = nResults;
             close();
             run("Clear Results");
