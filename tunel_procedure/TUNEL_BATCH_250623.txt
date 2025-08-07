@@ -1,0 +1,59 @@
+//-----------------------------------------------------
+//  Batch Max-Projection for ALL samples
+//  → saves as  sample-roi-channel.tif  in each chXX/
+//-----------------------------------------------------
+setBatchMode(true);
+
+// ——— 去掉条目末尾 “/” 的小函数 ———
+function stripSlash(name) {
+    if (endsWith(name, "/") || endsWith(name, "\\"))    // Win or *nix
+        return substring(name, 0, lengthOf(name)-1);
+    else
+        return name;
+}
+
+// 1. choose top directory that contains sample folders
+topDir = getDirectory("Choose folder containing all samples");
+
+// 2. loop samples
+samples = getFileList(topDir);
+for (s = 0; s < samples.length; s++) {
+    sampleEntry = samples[s];
+    if (!File.isDirectory(topDir + sampleEntry)) continue;
+
+    sampleName = stripSlash(sampleEntry);              // clean name
+    samplePath = topDir + sampleEntry;                 // still ends with /
+    
+    // 3. loop ROIs
+    rois = getFileList(samplePath);
+    for (r = 0; r < rois.length; r++) {
+        roiEntry = rois[r];
+        if (!File.isDirectory(samplePath + roiEntry)) continue;
+
+        roiName = stripSlash(roiEntry);
+        roiPath = samplePath + roiEntry;               // ends with /
+
+        // 4. loop channels
+        channels = newArray("ch00", "ch01");
+        for (c = 0; c < channels.length; c++) {
+            channelName = channels[c];
+            chanPath = roiPath + channelName + File.separator;
+            if (!File.isDirectory(chanPath)) continue;
+
+            // 5. load stack (virtual)
+            run("Image Sequence...", "open=[" + chanPath + "] sort use");
+
+            // 6. max-intensity projection
+            run("Z Project...", "projection=[Max Intensity]");
+
+            // 7. save as sample-roi-channel.tif inside chXX folder
+            outName = sampleName + "-" + roiName + "-" + channelName + ".tif";
+            saveAs("Tiff", chanPath + outName);
+
+            // 8. cleanup
+            run("Close All");
+        }
+    }
+}
+
+setBatchMode(false);

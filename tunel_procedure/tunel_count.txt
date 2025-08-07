@@ -1,0 +1,53 @@
+//-------------------------------------------------------------
+//  Batch positive-cell counting   →  positive_counts.txt
+//-------------------------------------------------------------
+setBatchMode(true);   // 加速，隐藏界面刷新
+
+// 1) 选择含所有待分析图片的目录
+dir = getDirectory("Choose folder with images");
+
+// 2) 结果文件：若已存在则覆盖
+outFile = dir + "positive_counts.txt";
+File.delete(outFile);
+File.append("Filename\tPositive_Count\n", outFile);
+
+// 3) 遍历目录中的每个文件
+list = getFileList(dir);
+for (i = 0; i < list.length; i++) {
+    name = list[i];
+
+    // 仅处理常见图像格式
+    if (!(endsWith(name, ".tif") || endsWith(name, ".tiff") ||
+          endsWith(name, ".jpg") || endsWith(name, ".jpeg") ||
+          endsWith(name, ".png"))) continue;
+
+    open(dir + name);
+
+    //------------------------------------------------------------------
+    // 你的单图处理流程
+    //------------------------------------------------------------------
+    run("8-bit");
+    setAutoThreshold("Default dark no-reset");
+run("Threshold...");
+setThreshold(13, 245);
+    setOption("BlackBackground", false);
+    run("Convert to Mask");
+    run("Analyze Particles...", "size=50-Infinity clear summarize");
+    //------------------------------------------------------------------
+
+    // 4) 从 Summary 表格读取 Count 值
+    positive = nResults;
+
+	
+           
+
+    // 5) 将结果写入 txt
+    File.append(name + "\t" + positive, outFile);
+
+    // 6) 清理窗口，为下一轮做准备
+    close();                    // 关闭当前图像
+            run("Clear Results");
+}
+File.close();
+
+setBatchMode(false);   // 还原交互模式
